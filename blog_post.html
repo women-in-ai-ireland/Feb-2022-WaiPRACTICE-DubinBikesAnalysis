@@ -1,0 +1,443 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WAI Practice - Feb 2022 - Dubin Bikes Analysis - learnings along the way &#8212; WAI - Feb 2022 - Dubin Bikes Analysis  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <!--
+    <link rel="author" title="About these documents" href="../about/" />
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" /> 
+    -->
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+  
+<style type="text/css">
+  ul.ablog-archive {
+    list-style: none;
+    overflow: auto;
+    margin-left: 0px;
+  }
+  ul.ablog-archive li {
+    float: left;
+    margin-right: 5px;
+    font-size: 80%;
+  }
+  ul.postlist a {
+    font-style: italic;
+  }
+  ul.postlist-style-disc {
+    list-style-type: disc;
+  }
+  ul.postlist-style-none {
+    list-style-type: none;
+  }
+  ul.postlist-style-circle {
+    list-style-type: circle;
+  }
+</style>
+
+  </head><body>
+  
+<!--
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+-->
+          <div class="body" role="main">
+             <div class="section" id="wai-practice-feb-2022-dubin-bikes-analysis-learnings-along-the-way">
+
+<h1>WAI Practice - Feb 2022 - Dubin Bikes Analysis - learnings along the way<a class="headerlink" href="#wai-practice-feb-2022-dubin-bikes-analysis-learnings-along-the-way" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<p>This blog post covers work done as part of <a class="reference external" href="https://women-in-ai-ireland.github.io/WAIPracticeInfoPage/">WaiPRACTICE</a> . It explores publically available data on the Dublin Bikes rental scheme in Dublin, Ireland. Although this project is still ongoing, 3 learnings that we share in this blog are:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.value_counts.html">pandas.DataFrame.value_counts()</a> can be used to gain useful insights from large tabular datasets</p></li>
+<li><p>SQLite is a really useful database engine</p></li>
+<li><p>Pandas has useful time and date functionality built in.</p></li>
+</ul>
+<p>Please read on to learn more.</p>
+</div>
+<div class="section" id="background">
+<h2>Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
+<p>The work presented here is part of the <a class="reference external" href="https://women-in-ai-ireland.github.io/WAIPracticeInfoPage/">WaiPRACTICE</a> initiative run by <a class="reference external" href="https://www.womeninai.co/">Women in AI (WAI)</a> Ireland in collaboration with <a class="reference external" href="https://pyladies.com/">PyLadies</a> Dublin. <a class="reference external" href="https://www.womeninai.co/">Women in AI (WAI)</a> is a non-proﬁt organisation working towards gender-inclusive AI that beneﬁts global society. Their mission is to increase female representation and participation in AI. The vision of the <a class="reference external" href="https://women-in-ai-ireland.github.io/WAIPracticeInfoPage/">WaiPRACTICE</a> initiative is “to support women in Ireland to build competence in Artiﬁcial Intelligence by providing access to Learning, Practice and a Community for support”. Teaming up with <a class="reference external" href="https://pyladies.com/">PyLadies</a> Dublin is a fantastic combination. It allows participants to work together on a group project to practice and develop their skills in Python, a popular language for AI, machine learning and data science, with mentoring and peer-to peer learning. Then, to wrap up, the participants get the opportunity to present and share their learnings and work at a <a class="reference external" href="https://pyladies.com/">PyLadies</a> Dublin meeting.</p>
+<p>To me, this sounded like a fantastic idea and I jumped at the chance to participate. While I’ve been working in the area of data science for the last 10+ years, I have not had much opportunity in recent years to actual sit down and code up and develop models for data science and machine learning problems from scratch. I wanted to jump back in, ensure that my existing skills remained fresh and learn new skills and knowledge on the way. <a class="reference external" href="https://women-in-ai-ireland.github.io/WAIPracticeInfoPage/">WaiPRACTICE</a> did not disappoint.</p>
+<div class="section" id="dataset">
+<h3>Dataset<a class="headerlink" href="#dataset" title="Permalink to this headline">¶</a></h3>
+<p>Dublin City has a bike sharing scheme called <a class="reference external" href="https://www.dublinbikes.ie/en/home">Dublin Bikes</a>. There are 100+ stations across the city where people can pick up and drop off a bike. Data on bike usage and stations is pubically available. For our analysis, we made use of the quarterly roll up usage data and station data available as csv files from <a class="reference external" href="https://data.smartdublin.ie/dataset/dublinbikes-api">here</a>, covering the time period of 1st April 2019 until 31 Dec 2021.</p>
+</div>
+</div>
+<div class="section" id="exploration">
+<h2>Exploration<a class="headerlink" href="#exploration" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="initial-aims">
+<h3>Initial Aims<a class="headerlink" href="#initial-aims" title="Permalink to this headline">¶</a></h3>
+<p>Our initial aims were to examine this data and see if it was possible to predict bike usage behaviour. After some initial googling, we discovered that Rachael Breslin had done some actual work on this in the past:
+<a class="reference external" href="https://towardsdatascience.com/what-dublin-bikes-data-can-tell-us-about-the-city-and-its-people-63fde77ee383">What Dublin Bikes data can tell us about the city and its people</a>. This provided us with a great template to build upon and re-examine the data, while learning new skills and techniques along the way.</p>
+</div>
+<div class="section" id="initial-exploration-of-bike-transaction-data">
+<h3>Initial exploration of bike transaction data<a class="headerlink" href="#initial-exploration-of-bike-transaction-data" title="Permalink to this headline">¶</a></h3>
+<p>See <a class="reference external" href="https://github.com/women-in-ai-ireland/Feb-2022-WaiPRACTICE-003/blob/main/Initial_exploration.ipynb">Initial_exploration.ipynb</a>
+The first step in any analysis is to explore the structure and make up of the data available. <a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.info.html">pandas.DataFrame.info()</a> is a good starting point. This one command tells us how many rows are present, how many columns are present, the names and types of columns, and how much memory is being used (useful to know if available computer memory is limited).</p>
+<img alt="pandas.DataFrame.info()" class="align-center" src="_images/df_info.png" />
+<p><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.head.html">pandas.DataFrame.head()</a> gives us a useful overview of the contents:</p>
+<img alt="pandas.DataFrame.head()" class="align-center" src="_images/df_head.png" />
+<p><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.describe.html">pandas.DataFrame.describe()</a> gives some useful summary statistics of the contents:</p>
+<img alt="pandas.DataFrame.describe()" class="align-center" src="_images/df_describe.png" />
+<div class="section" id="getting-an-overview-of-categorical-columns">
+<h4>Getting an overview of categorical columns<a class="headerlink" href="#getting-an-overview-of-categorical-columns" title="Permalink to this headline">¶</a></h4>
+<p>While the <code class="docutils literal notranslate"><span class="pre">describe()</span></code> function is useful for numerical columns, it doesn’t tell us anything about categorical columns like ‘NAME’ or ‘STATUS’. We can make use of <a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.value_counts.html">pandas.DataFrame.value_counts()</a> to learn more. Below we wrap it within a function, <code class="docutils literal notranslate"><span class="pre">get_frequency_counts()</span></code>, that takes a Pandas DataFrame, and for each column, returns the number of unique values and the top 10 and bottom 10 most frequently occuring values, for both numerical and categorical data.</p>
+<div class="literal-block-wrapper docutils container" id="id12">
+<div class="code-block-caption"><span class="caption-text">useful.py</span><a class="headerlink" href="#id12" title="Permalink to this code">¶</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span> <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="linenos"> 2</span> <span class="k">def</span> <span class="nf">get_freq_counts</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
+<span class="linenos"> 3</span>     <span class="sd">&quot;&quot;&quot;</span>
+<span class="linenos"> 4</span><span class="sd">     Print out the top 10 most frequent and the bottom 10 least frequent categories for each</span>
+<span class="linenos"> 5</span><span class="sd">     column in the df</span>
+<span class="linenos"> 6</span>
+<span class="linenos"> 7</span><span class="sd">     df: Pandas Dataframe. Data of interest</span>
+<span class="linenos"> 8</span><span class="sd">     &quot;&quot;&quot;</span>
+<span class="linenos"> 9</span>     <span class="k">for</span> <span class="n">cols</span> <span class="ow">in</span> <span class="n">df</span><span class="p">:</span>
+<span class="linenos">10</span>             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;======================&quot;</span><span class="p">)</span>
+<span class="linenos">11</span>             <span class="nb">print</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+<span class="linenos">12</span>             <span class="n">tot</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">cols</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+<span class="linenos">13</span>             <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tot</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot; unique values&quot;</span><span class="p">)</span>
+<span class="linenos">14</span>             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tot</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
+<span class="linenos">15</span>                     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Top 10&quot;</span><span class="p">)</span>
+<span class="linenos">16</span>                     <span class="nb">print</span><span class="p">(</span><span class="n">tot</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="mi">10</span><span class="p">])</span>
+<span class="linenos">17</span>                     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Bottom 10&quot;</span><span class="p">)</span>
+<span class="linenos">18</span>                     <span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">cols</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">(</span><span class="n">ascending</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="mi">10</span><span class="p">])</span>
+<span class="linenos">19</span>             <span class="k">else</span><span class="p">:</span>
+<span class="linenos">20</span>                     <span class="nb">print</span><span class="p">(</span><span class="n">tot</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Then</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">useful</span>
+</pre></div>
+</div>
+<p>Then</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">useful</span><span class="o">.</span><span class="n">get_freq_counts</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<img alt="Get the frequency counts of status" class="align-center" src="_images/get_freq_counts-status.png" />
+<p>It quickly tells us that there are 2 unique values for ‘STATUS’, ‘Open’ and ‘Close’ with ‘Open’ being the most common status, occurring 9.9M times in the data.</p>
+<p>For the ‘NAME’ column, it quickly tells us that there are 115 unique bike stations.We can quickly see that SMITHFIELD NORTH station has the most entries, while BROADSTONE has the least. These are things that are not immediately obvious from <code class="docutils literal notranslate"><span class="pre">info()</span></code>, <code class="docutils literal notranslate"><span class="pre">describe()</span></code> and <code class="docutils literal notranslate"><span class="pre">head()</span></code>.</p>
+<img alt="Get the frequency counts of name" class="align-center" src="_images/get_freq_counts-name.png" />
+<p>Using <code class="docutils literal notranslate"><span class="pre">useful.get_freq_counts()</span></code> combined with <code class="docutils literal notranslate"><span class="pre">info()</span></code>, <code class="docutils literal notranslate"><span class="pre">describe()</span></code> and <code class="docutils literal notranslate"><span class="pre">head()</span></code> gave us some useful initial observations.</p>
+</div>
+</div>
+<div class="section" id="initial-observations">
+<h3>Initial observations:<a class="headerlink" href="#initial-observations" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>There are 115 unique stations - For these we stations, we have station ids, names, addresses and geographical locations. We can consider these as static pieces of information perhaps create a separate lookup table with these. Note, however, that the _number_ of stations that are active during the time frame under study does change.</p></li>
+<li><p>‘BIKE STANDS’ is the number of stands associated with a station. ‘AVAILABLE BIKE STANDS’ are the number of bike stands that are empty or have no bike in them. ‘AVAILABLE BIKES’ is the number of bikes currently available for use at the station. In general, ‘BIKE STANDS’ = ‘AVAILABLE BIKES’ + ‘AVAILABLE BIKE STANDS’, however that is not always the case. Sometimes, ‘BIKE STANDS’ &gt; ‘AVAILABLE BIKES’ + ‘AVAILABLE BIKE STANDS’ suggesting that at a given time not all bike stands present at a station are available for use. Some may be temporarily out of order.</p></li>
+<li><p>‘LAST UPDATED’ and ‘TIME’ are both columns that consist of values that are a timestamp in the form of a string consisting of a date in YYYY-MM-DD format separated by a ” ” from a time in the format of HH:MM:SS. ‘TIME’ contains data from 5 min intervals for a given hour. For analysis, it would be useful to break ‘TIME’ into further columns - ‘date’, ‘time’ and ‘day_of_week’.</p></li>
+<li><p>Possibly missing data for 18 days in 2019-06, 8 days in 2019-12 and 16 days in 2020-01. Also, unlike the data of later years, the earlier data is not always recorded at 5 min intervals. This discontinuous nature of the earlier data would need to be considered when building forecasting models.</p></li>
+<li><p>‘STATUS’: 15 different stations had a status of closed during the given time frame</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="data-pre-processing">
+<h2>Data pre-processing<a class="headerlink" href="#data-pre-processing" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference external" href="https://github.com/women-in-ai-ireland/Feb-2022-WaiPRACTICE-003/blob/main/data_prep.ipynb">data_prep.ipynb</a>
+Here we made use of SQLite - the small but mighty Database Engine!</p>
+<div class="section" id="what-is-sqlite">
+<h3>What is SQLite?<a class="headerlink" href="#what-is-sqlite" title="Permalink to this headline">¶</a></h3>
+<p>A light weight, serverless database engine. Unlike other database engines like PosgreSQL, MySQL or Oracle, there is no separate server to manage the database. This allows it to be fast and readily embedded into applications on computers, phones and IOT devices, making it one of the most used database engines in its world.</p>
+</div>
+<div class="section" id="why-use-it-in-a-wai-project">
+<h3>Why use it in a WAI project?<a class="headerlink" href="#why-use-it-in-a-wai-project" title="Permalink to this headline">¶</a></h3>
+<div class="line-block">
+<div class="line">More efficient use of time and resources:</div>
+<div class="line">Here we had our raw data available across a number of different csv files. Each analysis by each group member involved reading in and pre-processing the same raw data each time. Therefore to save time, SQLite was used as a tool to store and share a common pre-processed data base among the group.</div>
+</div>
+<div class="line-block">
+<div class="line">Easy to use:</div>
+<div class="line">i) Python comes with a pre-built connection to it</div>
+<div class="line">ii) Administration is light. There is no need to set up users and their different levels of access.</div>
+<div class="line">iii) We had a relatively small, static dataset. Using something like the more traditional MySQL or PosgreSQL would be over-kill. As SQLite is serverless, the database is readily shared across the group by sharing the one file. <a href="#id8"><span class="problematic" id="id9">*</span></a>The final size of the database for this analysis was 2.2 GB).</div>
+</div>
+</div>
+<div class="section" id="how-did-we-use-it-here">
+<h3>How did we use it here?<a class="headerlink" href="#how-did-we-use-it-here" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li><dl class="simple">
+<dt><strong>Pre-process the data</strong> The output was 3 csv files:</dt><dd><ol class="lowerroman simple">
+<li><p>processed data on a bike station level and</p></li>
+<li><p>processed bike transaction data i.e. changes at a bike station over 5 min intervals and</p></li>
+<li><p>processed weather data.</p></li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>Create a SQLite database:</strong> Install <a class="reference external" href="https://dbeaver.io/">Dbeaver</a> . Open. Create a new database connection using the following steps:</dt><dd><ol class="lowerroman simple">
+<li><p>Select the ‘New Database Connection’ icon.</p></li>
+<li><p>Select ‘SQLite’. Enter the desired name of your database, append at the end by ‘.db’, into Path e.g. ‘wai.db’.</p></li>
+<li><p>Press ‘Finish’. Your new database now appears on the left hand side of the screen in the Database Navigator section.</p></li>
+</ol>
+</dd>
+</dl>
+</li>
+</ol>
+<img alt="create an sqlite database using Dbeaver" class="align-center" src="_images/create_sqlite_db.png" />
+<ol class="arabic simple" start="3">
+<li><p><strong>Populate the database</strong>: Click on your database in the Database Navigator to expand its contents. Right click on Tables -&gt; Import Data and use the Wizard to input your pandas dataframes or outputted csv files as tables of interest.</p></li>
+<li><p><strong>Share with others:</strong> The whole content of your database is now stored in the file is in the Path option of your database connection details. Make a copy of this file, compress it and share with other team members. The notebook <a class="reference external" href="https://github.com/women-in-ai-ireland/Feb-2022-WaiPRACTICE-003/blob/main/data_analysis_and_viz.ipynb">data_analysis_and_viz.ipynb</a> shows how to query the shared sqlite file for the required data.</p></li>
+</ol>
+</div>
+</div>
+<div class="section" id="visualisation">
+<h2>Visualisation<a class="headerlink" href="#visualisation" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference external" href="https://github.com/women-in-ai-ireland/Feb-2022-WaiPRACTICE-003/blob/main/data_analysis_and_viz.ipynb">data_analysis_and_viz.ipynb</a>.</p>
+<div class="section" id="correlation">
+<h3>Correlation<a class="headerlink" href="#correlation" title="Permalink to this headline">¶</a></h3>
+<p>There are a lot of variables to consider. Below, the correlation patterns are not initially apparent.</p>
+<img alt="correalation matrix" class="align-center" src="_images/corr_matrix.png" />
+<p>Therefore, with a bit of code, we can isolate out variables that have a positive correlation score of at least 0.75:</p>
+<img alt="positive correlation" class="align-center" src="_images/pos_corr.png" />
+<p>Likewise we can isolate out pairs of variabes with negative correlation between them:</p>
+<img alt="negative correlation" class="align-center" src="_images/neg_corr.png" />
+<p>There are no surprise or unexpected correlations. There appears to be positive correlation between weather-related variables, while there is negative correlation between the year and whether the Covid-19 virus was widely present in the population. Somethng to bear in mind when selecting features for potential modelling.</p>
+</div>
+<div class="section" id="percentage-occupancy">
+<h3>Percentage occupancy<a class="headerlink" href="#percentage-occupancy" title="Permalink to this headline">¶</a></h3>
+<p>Percentage occupancy is how many of the available bike stands at a station have a bike in them at a given time. If the percentage occupancy is high, then there are only a few free bike stands availble for people arriving with their bikes. Conversely,if the percentage occupancy is low then there are only a few bikes available for hire at a station. A sudden influx of people to a station in either situation could overwhelm the bike stand or the bike capacity of a station. Therefore, percentage occupancy is a useful metric when trying to understand the network of Dublin Bikes.</p>
+<p>From some boxlplots, it appears that cccupancy remains consistent between ~0.15 and ~0.6 across the day and across days of the week, suggesting that on a macro level bikes tend to be adequately balanced across the network.</p>
+<img alt="occupancy across the day" class="align-center" src="_images/occ_hr.png" />
+<img alt="occupancy across the different time periods of the day" class="align-center" src="_images/occ_time_period.png" />
+<img alt="occupancy across the days of the week" class="align-center" src="_images/occ_day_num.png" />
+<p>Differences are observed across the years, where occupancy appears to fluctuate less as the years go on.</p>
+<img alt="occupancy across the years" class="align-center" src="_images/occ_year.png" />
+<p>However, on a micro or station level, there are noticeable differences in occupancy:</p>
+<img alt="occupancy across the stations" class="align-center" src="_images/occ_station.png" />
+<p>The above all suggest that while at a macro level, the network of bikes and stations has a steady-state, there are noticeable differences at the micro level, where we see different patterns of occupancy levels between stations. Looking at the location of individual stations and their proximity to public transport hubs e.g. Heuston station, Luas stations or to offices or 3rd level education institutions would be a interesting piece of future work as it could help shed light on occupancy patterns of individual stations.</p>
+</div>
+</div>
+<div class="section" id="modelling">
+<h2>Modelling<a class="headerlink" href="#modelling" title="Permalink to this headline">¶</a></h2>
+<p>While we have begun to build models to predict bike stand occupancy, at the time of writing this, this is still work in progress. Meanwhile below are some learnings that I have gotten so far from this experienc.</p>
+</div>
+<div class="section" id="learnings">
+<h2>Learnings<a class="headerlink" href="#learnings" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><dl class="simple">
+<dt>I’ve been using Pandas Dataframes for many years, but this is the first time I have had the opportunity to learn and appreciate the useful time and date functionality built into Pandas. For example:</dt><dd><ol class="lowerroman simple">
+<li><p>readily create a time range: time_range = pd.date_range(start=’2019-04-01’, end=’2022-01-01’, freq=’5min’)</p></li>
+<li><p>using datetime objects to represent time stamps in a Pandas dataframe. Previously, I used to store timestamp columns as strings in a Pandas dataframe and use various lines of code to extract out the hour or minute or month from a timestamp. During this project, I learnt the easier way to do so:</p></li>
+</ol>
+</dd>
+</dl>
+</li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="c1"># First convert to a datetime object</span>
+<span class="linenos">2</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;DATETIME&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">]]</span>
+<span class="linenos">3</span><span class="c1"># Deconstruct the timestamp further</span>
+<span class="linenos">4</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;DATE&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">DATETIME</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">date</span>
+<span class="linenos">5</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;YEAR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">DATETIME</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">year</span>
+<span class="linenos">6</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;MONTH&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">DATETIME</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">month</span>
+<span class="linenos">7</span><span class="c1"># Get the day of the week as a number. 0 = Sunday, Saturday = 6.</span>
+<span class="linenos">8</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;DAY_NUMBER&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">DATETIME</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofweek</span>
+</pre></div>
+</div>
+<p>The above is a much quicker way than manipulating strings row by row over a large dataset (why did it take me so long to learn this !?!)</p>
+<ol class="arabic simple" start="2">
+<li><p>SQLite is a really neat, possibly under-utilised database engine. Combined with Dbeaver, you can set up a database of pre-processed data and share with others with much less effort than standard database solutions.</p></li>
+</ol>
+</div>
+<div class="section" id="conclusion">
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://women-in-ai-ireland.github.io/WAIPracticeInfoPage/">WaiPRACTICE</a> is a fantastic iniative. I thoroughly enjoyed taking part in it and it has helped re-build my confidence in my analysis skills. Although the current round has come to an end, I hope to continue working on the Dublin Bike data set in my own time, creating models for bike demand and network robustness.</p>
+</div>
+</div>
+
+<div class="section">
+    
+
+<div class="section">
+	<!--
+  <span style="float: left">
+     Previous:
+    
+    <a href="../first-post/">
+       First Post
+    </a>
+    
+  </span>
+  <span>&nbsp;</span>
+  <span style="float: right">
+    
+  </span>
+  -->
+</div>
+  
+</div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../">WAI - Feb 2022 - Dubin Bikes Analysis</a></h1>
+
+
+
+
+
+
+
+
+  
+<h2>
+   
+  25 April 2022 
+</h2>
+
+<ul>
+   
+<li id="author">
+  <span
+    >Author:</span
+  >
+   
+  <a href="../blog/author/rachael-mcbride/">Rachael McBride</a>  
+</li>
+    
+<li id="tags">
+  <span
+    >Tags: </span
+  >
+   
+  <a href="../blog/tag/wai/">WAI</a>   
+  <a href="../blog/tag/dublin-bikes/">Dublin Bikes</a>   
+  <a href="../blog/tag/python/">Python</a>  
+</li>
+ 
+</ul>
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about/">About Rachael McBride</a></li>
+</ul>
+
+
+<h3>
+  <a href="../blog/">Recent Posts</a>
+</h3>
+<ul>
+   
+  <li>
+    <a href="../first-post/"
+      >25 April - First Post</a
+    >
+  </li>
+  
+</ul>
+
+<h3><a href="../blog/tag/">Tags</a></h3>
+<style type="text/css">
+  ul.ablog-cloud {
+    list-style: none;
+    overflow: auto;
+  }
+  ul.ablog-cloud li {
+    float: left;
+    height: 20pt;
+    line-height: 18pt;
+    margin-right: 5px;
+  }
+  ul.ablog-cloud a {
+    text-decoration: none;
+    vertical-align: middle;
+  }
+  li.ablog-cloud-1 {
+    font-size: 80%;
+  }
+  li.ablog-cloud-2 {
+    font-size: 95%;
+  }
+  li.ablog-cloud-3 {
+    font-size: 110%;
+  }
+  li.ablog-cloud-4 {
+    font-size: 125%;
+  }
+  li.ablog-cloud-5 {
+    font-size: 140%;
+  }
+</style>
+<ul class="ablog-cloud">
+   
+  <li class="ablog-cloud ablog-cloud-3">
+    <a href="../blog/tag/dublin-bikes/">Dublin Bikes</a>
+  </li>
+    
+  <li class="ablog-cloud ablog-cloud-3">
+    <a href="../blog/tag/python/">Python</a>
+  </li>
+    
+  <li class="ablog-cloud ablog-cloud-3">
+    <a href="../blog/tag/wai/">WAI</a>
+  </li>
+    
+  <li class="ablog-cloud ablog-cloud-3">
+    <a href="../blog/tag/atag/">atag</a>
+  </li>
+   
+</ul>
+
+<h3>
+  <a href="../blog/archive/">Archives</a>
+</h3>
+<ul>
+   
+  <li>
+    <a href="../blog/2022/">2022 (2)</a>
+  </li>
+   
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Rachael McBride.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/main_post.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
